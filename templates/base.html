@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Control Escolar Web{% endblock %}</title>
+    <!-- Tailwind CSS desde CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome para Iconos -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Fuente Inter desde Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Inter', 'sans-serif'] },
+                    colors: {
+                        brand: {
+                            50: '#f0fdfa',
+                            500: '#14b8a6',
+                            600: '#0F766E', // Teal Solicitado #0F766E
+                            700: '#115e59', // Hover mas oscuro
+                            900: '#134e4a'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- SweetAlert2 para alertas elegantes -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script>
+        function confirmarEliminacion(event, form, elemento) {
+            event.preventDefault();
+            Swal.fire({
+                title: '¿Confirmar eliminación?',
+                html: `¿Estás seguro de que deseas eliminar a <b>${elemento}</b>?<br><span class="text-xs text-slate-500 mt-1 inline-block">Esta acción no se puede deshacer.</span>`,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#e11d48',
+                cancelButtonColor: '#64748b',
+                confirmButtonText: '<i class="fa-solid fa-trash-can mr-1"></i> Sí, eliminar',
+                cancelButtonText: 'Cancelar',
+                customClass: {
+                    container: 'backdrop-blur-sm bg-slate-900/40',
+                    popup: 'rounded-2xl shadow-2xl border border-slate-100 font-sans',
+                    title: 'text-lg font-bold text-slate-900',
+                    htmlContainer: 'text-sm text-slate-600'
+                }
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    form.submit();
+                }
+            });
+        }
+    </script>
+    <style>
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-900 font-sans antialiased min-h-screen flex flex-col selection:bg-brand-500 selection:text-white">
+
+    <!-- Header Translucido -->
+    <header class="sticky top-0 z-40 bg-white/85 backdrop-blur-md border-b border-slate-200/80">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="bg-brand-600 text-white p-2 rounded-xl shadow-sm shrink-0">
+                    <i class="fa-solid fa-graduation-cap text-lg sm:text-xl"></i>
+                </div>
+                <div>
+                    <h1 class="font-bold text-slate-900 text-base sm:text-lg leading-tight">Control Escolar UMB</h1>
+                    <p class="text-[11px] sm:text-xs text-slate-500 font-medium hidden xs:block">Gestión de Persistencia Relacional</p>
+                </div>
+            </div>
+            <span class="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1 rounded-full text-[11px] sm:text-xs font-semibold bg-brand-50 text-brand-700 border border-brand-500/20 shrink-0">
+                <span class="w-2 h-2 rounded-full bg-brand-500 animate-pulse"></span> Supabase Live
+            </span>
+        </div>
+    </header>
+
+    <!-- Contenido Dinámico -->
+    <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-white border-t border-slate-200 py-4 text-center text-xs text-slate-500">
+        <p>Sistema Web de Control Escolar - Programación Web con Bases de Datos © 2026</p>
+    </footer>
+
+    {% block scripts %}{% endblock %}
+</body>
+</html>
