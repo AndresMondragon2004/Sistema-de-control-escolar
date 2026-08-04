@@ -1,7 +1,8 @@
-from fastapi import FastAPI, Request, Depends, Form, HTTPException, status
+from fastapi import FastAPI, Request, Depends, Form, status
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
+from sqlalchemy.exc import IntegrityError
 from database import get_db
 import models
 
@@ -42,8 +43,12 @@ def crear_usuario(
     db: Session = Depends(get_db)
 ):
     nuevo_usuario = models.Usuario(nombre=nombre, correo=correo, password=password, rol=rol)
-    db.add(nuevo_usuario)
-    db.commit()
+    try:
+        db.add(nuevo_usuario)
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        return RedirectResponse(url="/?tab=usuarios&error=correo_existe", status_code=status.HTTP_303_SEE_OTHER)
     return RedirectResponse(url="/?tab=usuarios", status_code=status.HTTP_303_SEE_OTHER)
 
 @app.post("/usuarios/eliminar/{id_usuario}")
@@ -63,11 +68,17 @@ def editar_usuario(
     db: Session = Depends(get_db)
 ):
     usuario = db.get(models.Usuario, id_usuario)
-    if usuario:
-        usuario.nombre = nombre
-        usuario.correo = correo
-        usuario.rol = rol
+    if not usuario:
+        return RedirectResponse(url="/?tab=usuarios&error=no_encontrado", status_code=status.HTTP_303_SEE_OTHER)
+
+    usuario.nombre = nombre
+    usuario.correo = correo
+    usuario.rol = rol
+    try:
         db.commit()
+    except IntegrityError:
+        db.rollback()
+        return RedirectResponse(url="/?tab=usuarios&error=correo_existe", status_code=status.HTTP_303_SEE_OTHER)
     return RedirectResponse(url="/?tab=usuarios", status_code=status.HTTP_303_SEE_OTHER)
 
 # ---------------------------------------------------------
@@ -81,8 +92,34 @@ def crear_materia(
     db: Session = Depends(get_db)
 ):
     nueva_materia = models.Materia(clave=clave, nombre_mat=nombre_mat, creditos=creditos)
-    db.add(nueva_materia)
-    db.commit()
+    try:
+        db.add(nueva_materia)
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        return RedirectResponse(url="/?tab=materias&error=clave_existe", status_code=status.HTTP_303_SEE_OTHER)
+    return RedirectResponse(url="/?tab=materias", status_code=status.HTTP_303_SEE_OTHER)
+
+@app.post("/materias/editar/{id_materia}")
+def editar_materia(
+    id_materia: int,
+    clave: str = Form(...),
+    nombre_mat: str = Form(...),
+    creditos: int = Form(...),
+    db: Session = Depends(get_db)
+):
+    materia = db.get(models.Materia, id_materia)
+    if not materia:
+        return RedirectResponse(url="/?tab=materias&error=no_encontrado", status_code=status.HTTP_303_SEE_OTHER)
+
+    materia.clave = clave
+    materia.nombre_mat = nombre_mat
+    materia.creditos = creditos
+    try:
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        return RedirectResponse(url="/?tab=materias&error=clave_existe", status_code=status.HTTP_303_SEE_OTHER)
     return RedirectResponse(url="/?tab=materias", status_code=status.HTTP_303_SEE_OTHER)
 
 @app.post("/materias/eliminar/{id_materia}")
@@ -103,14 +140,60 @@ def crear_inscripcion(
     periodo: str = Form(...),
     db: Session = Depends(get_db)
 ):
+    # Evitar inscripciones duplicadas (mismo alumno, materia y periodo)
+    duplicada = db.query(models.Inscripcion).filter(
+        models.Inscripcion.id_usuario == id_usuario,
+        models.Inscripcion.id_materia == id_materia,
+        models.Inscripcion.periodo == periodo
+    ).first()
+    if duplicada:
+        return RedirectResponse(url="/?tab=inscripciones&error=inscripcion_duplicada", status_code=status.HTTP_303_SEE_OTHER)
+
     nueva_inscripcion = models.Inscripcion(id_usuario=id_usuario, id_materia=id_materia, periodo=periodo)
     db.add(nueva_inscripcion)
     db.flush()
-    
+
     # Crear calificación automática inicializada en 0.00
     nueva_calif = models.Calificacion(id_inscripcion=nueva_inscripcion.id_inscripcion, parcial_1=0, parcial_2=0, parcial_3=0, promedio_final=0)
     db.add(nueva_calif)
     db.commit()
+    return RedirectResponse(url="/?tab=inscripciones", status_code=status.HTTP_303_SEE_OTHER)
+
+@app.post("/inscripciones/editar/{id_inscripcion}")
+def editar_inscripcion(
+    id_inscripcion: int,
+    id_usuario: int = Form(...),
+    id_materia: int = Form(...),
+    periodo: str = Form(...),
+    db: Session = Depends(get_db)
+):
+    inscripcion = db.get(models.Inscripcion, id_inscripcion)
+    if not inscripcion:
+        return RedirectResponse(url="/?tab=inscripciones&error=no_encontrado", status_code=status.HTTP_303_SEE_OTHER)
+
+    # Evitar duplicados ignorando el registro que se está editando
+    duplicada = db.query(models.Inscripcion).filter(
+        models.Inscripcion.id_usuario == id_usuario,
+        models.Inscripcion.id_materia == id_materia,
+        models.Inscripcion.periodo == periodo,
+        models.Inscripcion.id_inscripcion != id_inscripcion
+    ).first()
+    if duplicada:
+        return RedirectResponse(url="/?tab=inscripciones&error=inscripcion_duplicada", status_code=status.HTTP_303_SEE_OTHER)
+
+    inscripcion.id_usuario = id_usuario
+    inscripcion.id_materia = id_materia
+    inscripcion.periodo = periodo
+    db.commit()
+    return RedirectResponse(url="/?tab=inscripciones", status_code=status.HTTP_303_SEE_OTHER)
+
+@app.post("/inscripciones/eliminar/{id_inscripcion}")
+def eliminar_inscripcion(id_inscripcion: int, db: Session = Depends(get_db)):
+    inscripcion = db.get(models.Inscripcion, id_inscripcion)
+    if inscripcion:
+        # Las calificaciones asociadas se eliminan en cascada
+        db.delete(inscripcion)
+        db.commit()
     return RedirectResponse(url="/?tab=inscripciones", status_code=status.HTTP_303_SEE_OTHER)
 
 # ---------------------------------------------------------

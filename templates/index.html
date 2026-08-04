@@ -19,6 +19,30 @@
     </a>
 </div>
 
+<!-- Banner de errores -->
+{% if request.query_params.get('error') %}
+<div class="mb-6 flex items-start gap-3 bg-rose-50 border border-rose-200 text-rose-800 px-4 py-3 rounded-xl text-sm shadow-sm">
+    <i class="fa-solid fa-circle-exclamation mt-0.5 text-rose-500"></i>
+    <div class="flex-1">
+        <p class="font-bold text-rose-700 mb-0.5">No se pudo completar la operación</p>
+        <p class="text-rose-600">
+            {% if request.query_params.get('error') == 'correo_existe' %}
+                El correo electrónico ya está registrado por otro usuario. Usa uno diferente.
+            {% elif request.query_params.get('error') == 'clave_existe' %}
+                Ya existe una materia con esa clave. Usa una clave diferente.
+            {% elif request.query_params.get('error') == 'inscripcion_duplicada' %}
+                El alumno ya está inscrito en esa materia durante el periodo seleccionado.
+            {% elif request.query_params.get('error') == 'no_encontrado' %}
+                El registro que intentabas modificar ya no existe.
+            {% endif %}
+        </p>
+    </div>
+    <button type="button" onclick="this.parentElement.remove()" class="text-rose-400 hover:text-rose-600 transition-all" title="Cerrar">
+        <i class="fa-solid fa-xmark"></i>
+    </button>
+</div>
+{% endif %}
+
 <!-- CONTENIDO TAB: USUARIOS -->
 {% if tab_activa == 'usuarios' %}
 <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -242,10 +266,55 @@
                         <td class="p-3 font-medium text-slate-900">{{ m.nombre_mat }}</td>
                         <td class="p-3 text-slate-600">{{ m.creditos }} pts</td>
                         <td class="p-3 text-right">
+                            <!-- Botón Editar Materia -->
+                            <button onclick="document.getElementById('modal-edit-materia-{{ m.id_materia }}').classList.remove('hidden')" class="text-amber-600 hover:text-amber-800 p-1.5 rounded-lg hover:bg-amber-50 transition-all mr-1" title="Editar">
+                                <i class="fa-solid fa-pen-to-square"></i>
+                            </button>
+
                             <!-- Botón Eliminar Materia -->
                             <button onclick="document.getElementById('modal-delete-materia-{{ m.id_materia }}').classList.remove('hidden')" class="text-rose-600 hover:text-rose-800 p-1.5 rounded-lg hover:bg-rose-50 transition-all" title="Eliminar">
                                 <i class="fa-solid fa-trash-can"></i>
                             </button>
+
+                            <!-- Modal Editar Materia -->
+                            <div id="modal-edit-materia-{{ m.id_materia }}" class="hidden fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4 text-left">
+                                <div class="bg-white rounded-2xl p-6 max-w-md w-full shadow-xl border border-slate-200">
+                                    <div class="flex justify-between items-center mb-4 border-b border-slate-100 pb-3">
+                                        <h3 class="font-bold text-slate-900">Editar Materia #{{ m.id_materia }}</h3>
+                                        <button type="button" onclick="document.getElementById('modal-edit-materia-{{ m.id_materia }}').classList.add('hidden')" class="text-slate-400 hover:text-slate-600">
+                                            <i class="fa-solid fa-xmark text-lg"></i>
+                                        </button>
+                                    </div>
+                                    <form action="/materias/editar/{{ m.id_materia }}" method="POST" class="space-y-4">
+                                        <div>
+                                            <label class="block text-xs font-semibold text-slate-600 mb-1">Clave</label>
+                                            <input type="text" name="clave" value="{{ m.clave }}" required
+                                                   pattern="[A-Z0-9\-]+"
+                                                   title="Solo letras mayúsculas, números y guiones (ej. COMP-404)"
+                                                   oninput="this.value = this.value.toUpperCase().replace(/[^A-Z0-9\-]/g, '')"
+                                                   class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-600 font-mono">
+                                        </div>
+                                        <div>
+                                            <label class="block text-xs font-semibold text-slate-600 mb-1">Nombre de la Materia</label>
+                                            <input type="text" name="nombre_mat" value="{{ m.nombre_mat }}" required
+                                                   pattern="[a-zA-Z0-9áéíóúÁÉÍÓÚñÑ\s]+"
+                                                   title="Solo letras, números y espacios"
+                                                   oninput="this.value = this.value.replace(/[^a-zA-Z0-9áéíóúÁÉÍÓÚñÑ\s]/g, '')"
+                                                   class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-600">
+                                        </div>
+                                        <div>
+                                            <label class="block text-xs font-semibold text-slate-600 mb-1">Créditos</label>
+                                            <input type="number" name="creditos" value="{{ m.creditos }}" min="1" max="10" required
+                                                   oninput="if(this.value < 1) this.value = 1; if(this.value > 10) this.value = 10;"
+                                                   class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-600">
+                                        </div>
+                                        <div class="flex justify-end gap-2 pt-2">
+                                            <button type="button" onclick="document.getElementById('modal-edit-materia-{{ m.id_materia }}').classList.add('hidden')" class="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-lg">Cancelar</button>
+                                            <button type="submit" class="px-4 py-2 text-xs font-semibold bg-brand-600 text-white hover:bg-brand-700 rounded-lg shadow-sm">Guardar Cambios</button>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
 
                             <!-- Modal Eliminar Materia (Misma opacidad bg-slate-900/40 y blur que el de Editar) -->
                             <div id="modal-delete-materia-{{ m.id_materia }}" class="hidden fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4 text-left">
@@ -296,16 +365,30 @@
                 <select name="id_usuario" required class="w-full px-3 py-2.5 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-600 bg-white">
                     {% for u in usuarios if u.rol == 'alumno' %}
                     <option value="{{ u.id_usuario }}">{{ u.nombre }}</option>
+                    {% else %}
+                    <option value="" disabled>No hay alumnos registrados</option>
                     {% endfor %}
                 </select>
+                {% if usuarios | selectattr('rol', 'eq', 'alumno') | list | length == 0 %}
+                <p class="mt-2 text-[11px] text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 flex items-center gap-1.5">
+                    <i class="fa-solid fa-circle-info"></i> Registra primero un usuario con rol "Alumno" para poder inscribirlo.
+                </p>
+                {% endif %}
             </div>
             <div>
                 <label class="block text-xs font-semibold text-slate-600 mb-1">Materia</label>
                 <select name="id_materia" required class="w-full px-3 py-2.5 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-600 bg-white">
                     {% for m in materias %}
                     <option value="{{ m.id_materia }}">{{ m.nombre_mat }} ({{ m.clave }})</option>
+                    {% else %}
+                    <option value="" disabled>No hay materias registradas</option>
                     {% endfor %}
                 </select>
+                {% if materias | length == 0 %}
+                <p class="mt-2 text-[11px] text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 flex items-center gap-1.5">
+                    <i class="fa-solid fa-circle-info"></i> Registra primero una materia en la pestaña "Materias".
+                </p>
+                {% endif %}
             </div>
             <div>
                 <label class="block text-xs font-semibold text-slate-600 mb-1">Periodo</label>
@@ -329,6 +412,7 @@
                         <th class="p-3">Alumno</th>
                         <th class="p-3">Materia</th>
                         <th class="p-3">Periodo</th>
+                        <th class="p-3 text-right">Acciones</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-slate-100">
@@ -338,9 +422,87 @@
                         <td class="p-3 font-medium text-slate-900">{{ i.usuario.nombre }}</td>
                         <td class="p-3 text-slate-700">{{ i.materia.nombre_mat }}</td>
                         <td class="p-3 text-slate-500 font-mono text-xs">{{ i.periodo }}</td>
+                        <td class="p-3 text-right">
+                            <!-- Botón Editar -->
+                            <button onclick="document.getElementById('modal-edit-insc-{{ i.id_inscripcion }}').classList.remove('hidden')" class="text-amber-600 hover:text-amber-800 p-1.5 rounded-lg hover:bg-amber-50 transition-all mr-1" title="Editar">
+                                <i class="fa-solid fa-pen-to-square"></i>
+                            </button>
+
+                            <!-- Botón Eliminar -->
+                            <button onclick="document.getElementById('modal-delete-insc-{{ i.id_inscripcion }}').classList.remove('hidden')" class="text-rose-600 hover:text-rose-800 p-1.5 rounded-lg hover:bg-rose-50 transition-all" title="Eliminar">
+                                <i class="fa-solid fa-trash-can"></i>
+                            </button>
+
+                            <!-- Modal Editar Inscripción -->
+                            <div id="modal-edit-insc-{{ i.id_inscripcion }}" class="hidden fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4 text-left">
+                                <div class="bg-white rounded-2xl p-6 max-w-md w-full shadow-xl border border-slate-200">
+                                    <div class="flex justify-between items-center mb-4 border-b border-slate-100 pb-3">
+                                        <h3 class="font-bold text-slate-900">Editar Inscripción #{{ i.id_inscripcion }}</h3>
+                                        <button type="button" onclick="document.getElementById('modal-edit-insc-{{ i.id_inscripcion }}').classList.add('hidden')" class="text-slate-400 hover:text-slate-600">
+                                            <i class="fa-solid fa-xmark text-lg"></i>
+                                        </button>
+                                    </div>
+                                    <form action="/inscripciones/editar/{{ i.id_inscripcion }}" method="POST" class="space-y-4">
+                                        <div>
+                                            <label class="block text-xs font-semibold text-slate-600 mb-1">Alumno</label>
+                                            <select name="id_usuario" required class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-600 bg-white">
+                                                {% if i.usuario.rol != 'alumno' %}
+                                                <option value="{{ i.id_usuario }}" selected>{{ i.usuario.nombre }} ({{ i.usuario.rol }})</option>
+                                                {% endif %}
+                                                {% for u in usuarios if u.rol == 'alumno' %}
+                                                <option value="{{ u.id_usuario }}" {% if i.id_usuario == u.id_usuario %}selected{% endif %}>{{ u.nombre }}</option>
+                                                {% endfor %}
+                                            </select>
+                                        </div>
+                                        <div>
+                                            <label class="block text-xs font-semibold text-slate-600 mb-1">Materia</label>
+                                            <select name="id_materia" required class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-600 bg-white">
+                                                {% for m in materias %}
+                                                <option value="{{ m.id_materia }}" {% if i.id_materia == m.id_materia %}selected{% endif %}>{{ m.nombre_mat }} ({{ m.clave }})</option>
+                                                {% endfor %}
+                                            </select>
+                                        </div>
+                                        <div>
+                                            <label class="block text-xs font-semibold text-slate-600 mb-1">Periodo</label>
+                                            <input type="text" name="periodo" value="{{ i.periodo }}" required class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-600">
+                                        </div>
+                                        <div class="flex justify-end gap-2 pt-2">
+                                            <button type="button" onclick="document.getElementById('modal-edit-insc-{{ i.id_inscripcion }}').classList.add('hidden')" class="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-lg">Cancelar</button>
+                                            <button type="submit" class="px-4 py-2 text-xs font-semibold bg-brand-600 text-white hover:bg-brand-700 rounded-lg shadow-sm">Guardar Cambios</button>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+
+                            <!-- Modal Eliminar Inscripción -->
+                            <div id="modal-delete-insc-{{ i.id_inscripcion }}" class="hidden fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4 text-left">
+                                <div class="bg-white rounded-2xl p-6 max-w-md w-full shadow-2xl border border-slate-200">
+                                    <div class="flex justify-between items-center mb-4 border-b border-slate-100 pb-3">
+                                        <div class="flex items-center gap-2 text-rose-600 font-bold">
+                                            <div class="p-2 bg-rose-50 rounded-xl">
+                                                <i class="fa-solid fa-triangle-exclamation text-base"></i>
+                                            </div>
+                                            <h3>Eliminar Inscripción</h3>
+                                        </div>
+                                        <button type="button" onclick="document.getElementById('modal-delete-insc-{{ i.id_inscripcion }}').classList.add('hidden')" class="text-slate-400 hover:text-slate-600">
+                                            <i class="fa-solid fa-xmark text-lg"></i>
+                                        </button>
+                                    </div>
+                                    <p class="text-sm text-slate-600 mb-2">¿Estás seguro de que deseas eliminar la inscripción de <strong class="text-slate-900">{{ i.usuario.nombre }}</strong> en <strong class="text-slate-900">{{ i.materia.nombre_mat }}</strong> ({{ i.periodo }})?</p>
+                                    <p class="text-xs text-slate-400 mb-6">Se eliminarán también sus calificaciones asociadas. Esta acción no se podrá deshacer.</p>
+
+                                    <form action="/inscripciones/eliminar/{{ i.id_inscripcion }}" method="POST" class="flex justify-end gap-2">
+                                        <button type="button" onclick="document.getElementById('modal-delete-insc-{{ i.id_inscripcion }}').classList.add('hidden')" class="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-lg">Cancelar</button>
+                                        <button type="submit" class="px-4 py-2 text-xs font-semibold bg-rose-600 text-white hover:bg-rose-700 rounded-lg shadow-sm flex items-center gap-1.5">
+                                            <i class="fa-solid fa-trash-can text-xs"></i> Eliminar Inscripción
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+                        </td>
                     </tr>
                     {% else %}
-                    <tr><td colspan="4" class="p-6 text-center text-slate-400">No hay inscripciones registradas.</td></tr>
+                    <tr><td colspan="5" class="p-6 text-center text-slate-400">No hay inscripciones registradas.</td></tr>
                     {% endfor %}
                 </tbody>
             </table>
@@ -370,7 +532,6 @@
             <tbody class="divide-y divide-slate-100">
                 {% for c in calificaciones %}
                 <tr class="hover:bg-slate-50/80 transition-all">
-                    <form action="/calificaciones/actualizar/{{ c.id_calificacion }}" method="POST">
                         <td class="p-3 font-medium text-slate-900">{{ c.inscripcion.usuario.nombre }}</td>
                         <td class="p-3 text-slate-600 text-xs">{{ c.inscripcion.materia.nombre_mat }}</td>
                         <td class="p-3 text-center">
@@ -394,11 +555,15 @@
                             </span>
                         </td>
                         <td class="p-3 text-right">
-                            <button type="submit" class="bg-brand-600 hover:bg-brand-700 text-white px-3 py-1.5 rounded-lg text-xs font-medium transition-all shadow-sm">
-                                <i class="fa-solid fa-floppy-disk mr-1"></i> Guardar
-                            </button>
+                            <form action="/calificaciones/actualizar/{{ c.id_calificacion }}" method="POST" onsubmit="sincronizarCalificaciones(this)">
+                                <input type="hidden" name="parcial_1">
+                                <input type="hidden" name="parcial_2">
+                                <input type="hidden" name="parcial_3">
+                                <button type="submit" class="bg-brand-600 hover:bg-brand-700 text-white px-3 py-1.5 rounded-lg text-xs font-medium transition-all shadow-sm">
+                                    <i class="fa-solid fa-floppy-disk mr-1"></i> Guardar
+                                </button>
+                            </form>
                         </td>
-                    </form>
                 </tr>
                 {% else %}
                 <tr><td colspan="7" class="p-6 text-center text-slate-400">No hay registros de calificaciones.</td></tr>
@@ -408,4 +573,20 @@
     </div>
 </div>
 {% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Copia los parciales visibles hacia los campos ocultos del formulario.
+    // El <form> vive dentro del <td> para mantener el HTML válido en la tabla.
+    function sincronizarCalificaciones(form) {
+        var fila = form.closest('tr');
+        ['parcial_1', 'parcial_2', 'parcial_3'].forEach(function (nombre) {
+            var campo = fila.querySelector('input[name="' + nombre + '"]:not([type="hidden"])');
+            var valor = campo ? parseFloat(campo.value) : 0;
+            form[nombre].value = isNaN(valor) ? 0 : valor;
+        });
+        return true;
+    }
+</script>
 {% endblock %}
