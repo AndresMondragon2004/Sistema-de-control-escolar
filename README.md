@@ -51,7 +51,7 @@ graph TD
 ## Modelo de Datos
 
 ```mermaid
-erdiagram
+erDiagram
     USUARIOS ||--o{ INSCRIPCIONES : "realiza"
     MATERIAS ||--o{ INSCRIPCIONES : "pertenece a"
     INSCRIPCIONES ||--|| CALIFICACIONES : "posee"
