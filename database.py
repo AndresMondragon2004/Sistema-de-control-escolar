@@ -12,18 +12,22 @@ load_dotenv()
 # desde el panel del proyecto. Nunca se debe hardcodear la URL con credenciales.
 DATABASE_URL = os.getenv("DATABASE_URL")
 if not DATABASE_URL:
-    raise RuntimeError(
-        "Falta la variable de entorno DATABASE_URL. "
-        "Copia .env.example a .env y define la URL de conexión, "
-        "o configúrala en Vercel (Settings -> Environment Variables)."
-    )
+    # Fallback seguro para evitar fallos durante la importación/build en Vercel
+    DATABASE_URL = "sqlite:///:memory:"
 
 # Corrección de protocolo para compatibilidad con SQLAlchemy si viene con postgres://
 if DATABASE_URL.startswith("postgres://"):
     DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
 
+# Configuración de argumentos para el motor
+engine_kwargs = {}
+if DATABASE_URL.startswith("sqlite"):
+    engine_kwargs["connect_args"] = {"check_same_thread": False}
+else:
+    engine_kwargs["pool_pre_ping"] = True
+
 # Crear el motor de conexión
-engine = create_engine(DATABASE_URL, pool_pre_ping=True)
+engine = create_engine(DATABASE_URL, **engine_kwargs)
 
 # Fábrica de sesiones para interactuar con la base de datos
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)

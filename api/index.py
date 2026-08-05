@@ -1,32 +1,12 @@
 import sys
 from pathlib import Path
 
-# Agregar la raíz del proyecto al sys.path para resolver las importaciones
-file = Path(__file__).resolve()
-parent, root = file.parent, file.parents[1]
-sys.path.append(str(root))
+# Agregar el directorio raíz del proyecto al sys.path para resolver los módulos (main, database, models, etc.)
+root_dir = Path(__file__).resolve().parent.parent
+if str(root_dir) not in sys.path:
+    sys.path.insert(0, str(root_dir))
 
-try:
-    from main import app
+from main import app
 
-    # Vercel Serverless Function handler
-    handler = app
-except Exception:  # pragma: no cover - ayuda a diagnosticar fallos en Vercel
-    import traceback
-
-    from fastapi import FastAPI
-    from fastapi.responses import JSONResponse
-
-    app = FastAPI(title="Control Escolar - Error de arranque")
-
-    @app.get("/{path:path}", include_in_schema=False)
-    async def error_arranque(path: str):
-        return JSONResponse(
-            status_code=500,
-            content={
-                "error": "La función no pudo cargarse. Revisa los logs de Vercel.",
-                "detalle": str(traceback.format_exc()),
-            },
-        )
-
-    handler = app
+# Definición a nivel superior requerida por el builder @vercel/python
+handler = app
