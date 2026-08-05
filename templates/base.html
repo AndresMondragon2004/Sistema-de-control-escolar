@@ -74,9 +74,24 @@
                     <p class="text-[11px] sm:text-xs text-slate-500 font-medium hidden xs:block">Gestión de Persistencia Relacional</p>
                 </div>
             </div>
-            <span class="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1 rounded-full text-[11px] sm:text-xs font-semibold bg-brand-50 text-brand-700 border border-brand-500/20 shrink-0">
-                <span class="w-2 h-2 rounded-full bg-brand-500 animate-pulse"></span> Supabase Live
-            </span>
+            <div class="flex items-center gap-2 sm:gap-3">
+                {% if usuario_actual %}
+                <div class="hidden sm:flex items-center gap-2">
+                    <span class="text-xs font-semibold text-slate-700 max-w-[130px] truncate">{{ usuario_actual.nombre }}</span>
+                    <span class="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wide bg-brand-50 text-brand-700 border border-brand-500/20">{{ usuario_actual.rol }}</span>
+                </div>
+                <form action="/logout" method="POST" class="shrink-0">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                    <button type="submit" class="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-600 hover:text-rose-600 hover:bg-rose-50 border border-slate-200 hover:border-rose-200 transition-all" title="Cerrar sesión">
+                        <i class="fa-solid fa-right-from-bracket"></i>
+                        <span class="hidden sm:inline">Salir</span>
+                    </button>
+                </form>
+                {% endif %}
+                <span class="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1 rounded-full text-[11px] sm:text-xs font-semibold bg-brand-50 text-brand-700 border border-brand-500/20 shrink-0">
+                    <span class="w-2 h-2 rounded-full bg-brand-500 animate-pulse"></span> Supabase Live
+                </span>
+            </div>
         </div>
     </header>
 

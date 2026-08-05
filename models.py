@@ -1,5 +1,5 @@
 from typing import List, Optional
-from sqlalchemy import String, ForeignKey, DECIMAL, Integer
+from sqlalchemy import String, ForeignKey, DECIMAL, Integer, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from database import Base
 
@@ -31,6 +31,10 @@ class Materia(Base):
 # 3. Entidad Intermedia Inscripciones
 class Inscripcion(Base):
     __tablename__ = "inscripciones"
+    __table_args__ = (
+        # Evita que un alumno se inscriba dos veces en la misma materia y periodo
+        UniqueConstraint("id_usuario", "id_materia", "periodo", name="uq_inscripcion_usuario_materia_periodo"),
+    )
 
     id_inscripcion: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     id_usuario: Mapped[int] = mapped_column(ForeignKey("usuarios.id_usuario", ondelete="RESTRICT", onupdate="CASCADE"), nullable=False)

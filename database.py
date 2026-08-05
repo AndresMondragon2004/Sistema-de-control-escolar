@@ -1,10 +1,22 @@
 import os
+from dotenv import load_dotenv
 from sqlalchemy import create_engine
 from sqlalchemy.orm import DeclarativeBase, sessionmaker
 
-# URL de conexión a Supabase (PostgreSQL)
-# Se intenta obtener desde variables de entorno o usa una por defecto para pruebas locales
-DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://postgres.tsawzmfvjgsikjtvsmfs:dLcCG8PKIh60muMF@aws-1-us-west-2.pooler.supabase.com:6543/postgres")
+# Carga las variables del archivo .env (solo para desarrollo local; en Vercel
+# las variables se configuran en Settings -> Environment Variables).
+load_dotenv()
+
+# URL de conexión a Supabase (PostgreSQL). Se lee SIEMPRE de la variable de
+# entorno DATABASE_URL: localmente desde .env (ver .env.example) y en la nube
+# desde el panel del proyecto. Nunca se debe hardcodear la URL con credenciales.
+DATABASE_URL = os.getenv("DATABASE_URL")
+if not DATABASE_URL:
+    raise RuntimeError(
+        "Falta la variable de entorno DATABASE_URL. "
+        "Copia .env.example a .env y define la URL de conexión, "
+        "o configúrala en Vercel (Settings -> Environment Variables)."
+    )
 
 # Corrección de protocolo para compatibilidad con SQLAlchemy si viene con postgres://
 if DATABASE_URL.startswith("postgres://"):
