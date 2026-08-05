@@ -1,243 +1,224 @@
-# 🎓 Control Escolar UMB — Sistema Web de Gestión Escolar
+# Control Escolar UMB — Sistema Web de Gestión Escolar
 
-Sistema web **full-stack** para el control escolar: gestión de **usuarios** (alumnos, docentes y administradores), **materias**, **inscripciones** y **calificaciones**, con un dashboard moderno, autenticación por sesiones y control de acceso por roles.
+![Python](https://img.shields.io/badge/Python-3.10+-3776AB?style=for-the-badge&logo=python&logoColor=white)
+![FastAPI](https://img.shields.io/badge/FastAPI-005571?style=for-the-badge&logo=fastapi)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-4169E1?style=for-the-badge&logo=postgresql&logoColor=white)
+![Supabase](https://img.shields.io/badge/Supabase-3ECF8E?style=for-the-badge&logo=supabase&logoColor=white)
+![SQLAlchemy](https://img.shields.io/badge/SQLAlchemy-D71F00?style=for-the-badge&logo=sqlalchemy&logoColor=white)
+![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white)
+![Vercel](https://img.shields.io/badge/Vercel-000000?style=for-the-badge&logo=vercel&logoColor=white)
 
-Construido con **Python (FastAPI)**, **SQLAlchemy**, **PostgreSQL (Supabase)** y **Jinja2 + Tailwind CSS**, desplegable en **Vercel**.
+Sistema web full-stack para el control escolar de la Universidad Misantla / UMB. Diseñado para la gestión integral de usuarios (alumnos, docentes y administradores), materias, inscripciones y calificaciones, incluyendo autenticación mediante sesiones, protección CSRF y control de acceso basado en roles (RBAC).
 
 ---
 
-## ✨ Funcionalidades
+## Características Principales
 
-### CRUD completo (4 entidades)
+### Gestión CRUD Integral
+
 | Entidad | Crear | Leer | Editar | Eliminar |
-|---------|:-----:|:----:|:------:|:--------:|
-| **Usuarios** (alumno/docente/admin) | ✅ | ✅ | ✅ | ✅ |
-| **Materias** (clave, nombre, créditos) | ✅ | ✅ | ✅ | ✅ |
-| **Inscripciones** (alumno ↔ materia + periodo) | ✅ | ✅ | ✅ | ✅ |
-| **Calificaciones** (3 parciales + promedio) | ✅ | ✅ | ✅ | — |
+|---|:---:|:---:|:---:|:---:|
+| **Usuarios** (Alumno, Docente, Administrador) | ✓ | ✓ | ✓ | ✓ |
+| **Materias** (Clave, Nombre, Créditos) | ✓ | ✓ | ✓ | ✓ |
+| **Inscripciones** (Alumno ↔ Materia, Periodo) | ✓ | ✓ | ✓ | ✓ |
+| **Calificaciones** (3 Parciales + Promedio Final) | ✓ | ✓ | ✓ | — |
 
-### Detalles de funcionamiento
-- **Promedio automático**: al guardar los 3 parciales se recalcula `promedio_final` (0–10) con insignia de color (verde ≥ 8, ámbar < 8).
-- **Calificación automática**: al inscribir a un alumno se crea su registro de calificaciones en `0.00`.
-- **Prevención de duplicados**: no se permite inscribir al mismo alumno en la misma materia y periodo (a nivel de aplicación **y** con restricción `UNIQUE` en la base de datos).
-- **Bajas en cascada**: al eliminar un usuario o materia se eliminan sus inscripciones y calificaciones; al eliminar una inscripción se eliminan sus calificaciones.
-- **Formularios con validación**: patrones de entrada (solo letras, claves en mayúsculas, créditos 1–10, calificaciones 0–10), modal de confirmación para eliminar y modales de edición.
-- **Estados vacíos**: mensajes y avisos útiles cuando no hay alumnos, materias o registros.
-
----
-
-## 🔐 Seguridad
-
-- **Autenticación por sesiones**: cookies firmadas con `itsdangerous` (Starlette `SessionMiddleware`), `SameSite=Lax` y flag `Secure` configurable (`SESSION_HTTPS_ONLY`).
-- **Contraseñas hasheadas** con **bcrypt** (nunca se almacenan en texto plano).
-  - *Migración automática*: las contraseñas legadas guardadas en texto plano se re-hashean al primer inicio de sesión exitoso.
-- **Protección CSRF**: token por sesión validado en **todos** los endpoints `POST` (responde `403` si falta o no coincide).
-- **Control de acceso por roles**:
-
-| Rol | Usuarios | Materias | Inscripciones | Calificaciones |
-|-----|:--------:|:--------:|:-------------:|:--------------:|
-| `admin` | ✅ | ✅ | ✅ | ✅ |
-| `docente` | ❌ | ✅ | ✅ | ✅ |
-| `alumno` | ❌ | ❌ | ❌ | ❌ (solo lectura) |
-
-- **Anti fuerza bruta**: tras 5 intentos de inicio de sesión fallidos se bloquea temporalmente por 60 segundos.
-- **Cabeceras de seguridad**: `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, `Referrer-Policy: same-origin`.
-- **Credenciales fuera del código**: toda la configuración sensible se lee de variables de entorno (`.env` en local, panel de Vercel en la nube).
+### Lógica de Negocio y Reglas de Dominio
+- **Cálculo automático de promedio**: El sistema procesa los 3 parciales y recalcula automáticamente la calificación final (rango 0–10) con indicadores visuales de desempeño.
+- **Generación automática de registros**: Al inscribir a un alumno en una materia, se inicializa automáticamente su expediente de calificaciones en `0.00`.
+- **Restricción de unicidad**: Control de inscripción única por alumno, materia y periodo tanto a nivel de controladores como mediante restricciones de base de datos (`UNIQUE`).
+- **Integridad referencial y bajas en cascada**: Eliminación automática en cascada para evitar registros huérfanoses de inscripciones o calificaciones al eliminar usuarios o materias.
+- **Validación de entradas y modales interactivos**: Modales responsivos para edición y confirmación de eliminación con validación de formularios en tiempo de ejecución.
 
 ---
 
-## 🧰 Tecnologías
+## Arquitectura y Flujo del Sistema
 
-| Capa | Tecnología |
-|------|------------|
-| Backend | Python 3, **FastAPI**, **Uvicorn** |
-| ORM | **SQLAlchemy 2** (modelos con `Mapped`/`mapped_column`) |
-| Base de datos | **PostgreSQL** en **Supabase** (`psycopg2-binary`) |
-| Plantillas | **Jinja2** (SSR) |
-| Frontend | **Tailwind CSS** (CDN), **Font Awesome**, **Google Fonts (Inter)** |
-| Seguridad | **bcrypt**, `itsdangerous` (sesiones), token CSRF, `python-dotenv` |
-| Despliegue | **Vercel** (`vercel.json` + `api/index.py`) |
-
----
-
-## 📁 Estructura del proyecto
-
+```mermaid
+graph TD
+    Client["Navegador Web (Cliente)"] -->|HTTP / HTML Form + CSRF Token| Middleware["Middleware de Sesión & CSRF"]
+    Middleware -->|Verifica Cookie / Token| AuthGuard["Controlador de Autorización (RBAC)"]
+    AuthGuard -->|Acceso Permitido| Routes["Endpoints / Rutas FastAPI"]
+    AuthGuard -->|Acceso Denegado| Redirect["Redirección / Error 403"]
+    Routes -->|Consultas ORM| SQLAlchemy["SQLAlchemy 2.0 ORM"]
+    SQLAlchemy -->|Driver psycopg2| DB[(Base de Datos PostgreSQL - Supabase)]
+    Routes -->|Renderizado SSR| Jinja["Motor de Plantillas Jinja2 + Tailwind"]
+    Jinja -->|HTML Dinámico| Client
 ```
+
+---
+
+## Modelo de Datos
+
+```mermaid
+erdiagram
+    USUARIOS ||--o{ INSCRIPCIONES : "realiza"
+    MATERIAS ||--o{ INSCRIPCIONES : "pertenece a"
+    INSCRIPCIONES ||--|| CALIFICACIONES : "posee"
+
+    USUARIOS {
+        int id_usuario PK
+        string nombre
+        string correo UK
+        string password "bcrypt hash"
+        string rol "admin | docente | alumno"
+    }
+
+    MATERIAS {
+        int id_materia PK
+        string clave UK
+        string nombre_mat
+        int creditos
+    }
+
+    INSCRIPCIONES {
+        int id_inscripcion PK
+        int id_usuario FK
+        int id_materia FK
+        string periodo
+    }
+
+    CALIFICACIONES {
+        int id_calificacion PK
+        int id_inscripcion FK
+        float parcial_1
+        float parcial_2
+        float parcial_3
+        float promedio_final
+    }
+```
+
+---
+
+## Seguridad
+
+- **Autenticación Basada en Sesiones**: Firma de cookies cifradas mediante `itsdangerous` y `SessionMiddleware` de Starlette.
+- **Protección de Contraseñas**: Encriptación unidireccional con **bcrypt**. Migración transparente de contraseñas anteriores al primer login exitoso.
+- **Protección contra CSRF**: Verificación de tokens únicos por sesión en todas las peticiones de mutación (`POST`).
+- **Control de Acceso Basado en Roles (RBAC)**:
+
+| Rol | Gestión de Usuarios | Gestión de Materias | Inscripciones | Calificaciones |
+|---|:---:|:---:|:---:|:---:|
+| **Administrador** | Lectura / Escritura | Lectura / Escritura | Lectura / Escritura | Lectura / Escritura |
+| **Docente** | Sin acceso | Lectura / Escritura | Lectura / Escritura | Lectura / Escritura |
+| **Alumno** | Sin acceso | Sin acceso | Sin acceso | Solo lectura |
+
+- **Mitigación de Ataques**: Bloqueo temporal por 60 segundos tras 5 intentos fallidos consecutivos de inicio de sesión.
+- **Cabeceras HTTP Seguras**: `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, `Referrer-Policy: same-origin`.
+
+---
+
+## Tecnologías Utilizadas
+
+| Capa / Componente | Tecnología |
+|---|---|
+| **Lenguaje Backend** | Python 3.10+ |
+| **Framework Web** | FastAPI, Uvicorn |
+| **Capa de Datos (ORM)** | SQLAlchemy 2.0 |
+| **Base de Datos** | PostgreSQL (Supabase) |
+| **Motor de Plantillas** | Jinja2 (Server-Side Rendering) |
+| **Diseño / Estilos** | Tailwind CSS, Font Awesome, Google Fonts |
+| **Seguridad** | bcrypt, itsdangerous, python-dotenv |
+| **Plataforma de Despliegue** | Vercel (Serverless Functions) |
+
+---
+
+## Estructura del Proyecto
+
+```text
 control-escolar-web/
-├── main.py              # Aplicación FastAPI: rutas, autenticación, CSRF, roles
-├── models.py            # Modelos SQLAlchemy (Usuario, Materia, Inscripcion, Calificacion)
-├── database.py          # Motor de BD, sesiones y dependencia get_db
-├── security.py          # Hashing y verificación de contraseñas (bcrypt)
-├── create_table.py      # Inicialización: tablas, constraint UNIQUE y admin inicial
-├── requirements.txt     # Dependencias de Python
-├── .env.example         # Plantilla de variables de entorno (local)
-├── .env                 # Variables locales (NO se sube al repositorio)
-├── vercel.json          # Configuración de despliegue en Vercel
+├── main.py              # Controlador principal, rutas FastAPI, validaciones y RBAC
+├── models.py            # Definición de modelos relacionales SQLAlchemy
+├── database.py          # Configuración del motor PostgreSQL y sesiones DB
+├── security.py          # Módulo de encriptación bcrypt y utilidades de seguridad
+├── create_table.py      # Script de inicialización de esquema y administrador inicial
+├── requirements.txt     # Listado de dependencias del proyecto
+├── vercel.json          # Archivo de configuración para despliegue en Vercel
+├── .env.example         # Plantilla de variables de entorno de desarrollo
 ├── api/
-│   └── index.py         # Handler serverless de Vercel
+│   └── index.py         # Punto de entrada para Serverless en Vercel
 └── templates/
-    ├── base.html        # Layout principal (header con usuario, logout, footer)
-    ├── index.html       # Dashboard con 4 pestañas (CRUD completo)
-    └── login.html       # Página de inicio de sesión
+    ├── base.html        # Plantilla base (Layout, navegación y modales comunes)
+    ├── index.html       # Dashboard principal con panel de control multi-pestaña
+    └── login.html       # Vista de autenticación de usuarios
 ```
 
 ---
 
-## 🗄️ Modelo de datos
+## Instalación y Configuración Local
 
-```
-usuarios ──1──< inscripciones >──1── materias
-                │
-                └──1──< calificaciones
-```
+### 1. Requisitos Previos
+- Python 3.10 o superior instalado.
+- Instancia de PostgreSQL (se recomienda Supabase).
 
-| Tabla | Campos |
-|-------|--------|
-| `usuarios` | `id_usuario` (PK), `nombre`, `correo` (unique), `password` (hash bcrypt), `rol` (`alumno`/`docente`/`admin`) |
-| `materias` | `id_materia` (PK), `clave` (unique), `nombre_mat`, `creditos` |
-| `inscripciones` | `id_inscripcion` (PK), `id_usuario` (FK), `id_materia` (FK), `periodo` — **UNIQUE** (`id_usuario`, `id_materia`, `periodo`) |
-| `calificaciones` | `id_calificacion` (PK), `id_inscripcion` (FK, ON DELETE CASCADE), `parcial_1`, `parcial_2`, `parcial_3`, `promedio_final` |
-
----
-
-## 🚀 Instalación y ejecución local
-
-### 1. Requisitos
-- Python 3.10+ (el proyecto se probó con Python 3.14)
-- Una base de datos PostgreSQL (se recomienda **Supabase**, plan gratuito)
-
-### 2. Clonar e instalar dependencias
+### 2. Clonación e Instalación
 
 ```bash
-git clone <url-del-repositorio>
+git clone https://github.com/AndresMondragon2004/Sistema-de-control-escolar.git
 cd control-escolar-web
 
-# Crear entorno virtual (recomendado)
+# Creación del entorno virtual
 python -m venv venv
 
-# Activar (Windows)
+# Activación del entorno virtual (Windows)
 venv\Scripts\activate
-# Activar (macOS/Linux)
+
+# Activación del entorno virtual (macOS / Linux)
 source venv/bin/activate
 
-# Instalar dependencias
+# Instalación de dependencias
 pip install -r requirements.txt
 ```
 
-### 3. Configurar variables de entorno
+### 3. Variables de Entorno
+
+Copia el archivo de ejemplo `.env.example` a `.env` y configura los valores requeridos:
 
 ```bash
-# 1) Copiar la plantilla
-cp .env.example .env        # Windows: copy .env.example .env
-
-# 2) Editar .env con tus datos
+cp .env.example .env
 ```
 
-| Variable | Descripción | Ejemplo |
-|----------|-------------|---------|
-| `DATABASE_URL` | Cadena de conexión a PostgreSQL **<sup>1</sup>** | `postgresql://usuario:clave@host.supabase.com:6543/postgres` |
-| `SESSION_SECRET` | Clave para firmar las cookies de sesión <sup>2</sup> | `x7K...generada` |
-| `SESSION_HTTPS_ONLY` | `true` si el sitio usa https (producción) | `false` en local |
-| `ADMIN_EMAIL` | Correo del admin inicial (opcional) | `admin@control.com` |
-| `ADMIN_PASSWORD` | Contraseña del admin inicial (opcional) | `admin123` |
+| Variable | Descripción |
+|---|---|
+| `DATABASE_URL` | URI de conexión a la base de datos PostgreSQL de Supabase. |
+| `SESSION_SECRET` | Llave secreta para el firmado de cookies de sesión. |
+| `SESSION_HTTPS_ONLY` | `true` en entorno de producción (HTTPS), `false` en desarrollo local. |
+| `ADMIN_EMAIL` | Correo electrónico predeterminado para la cuenta de administrador. |
+| `ADMIN_PASSWORD` | Contraseña inicial para la cuenta de administrador. |
 
-<sup>1</sup> Consíguela en Supabase → *Project Settings → Database → Connection string (URI)*.
-<sup>2</sup> Genérala con: `python -c "import secrets; print(secrets.token_urlsafe(48))"`.
+### 4. Inicialización de la Base de Datos
 
-### 4. Inicializar la base de datos (una sola vez)
+Ejecuta el script de migración inicial para estructurar la base de datos y generar las credenciales del administrador inicial:
 
 ```bash
 python create_table.py
 ```
 
-Este script:
-1. Crea/verifica las 4 tablas.
-2. **Limpia inscripciones duplicadas** (conserva la de menor id y elimina sus calificaciones).
-3. Agrega la restricción `UNIQUE (id_usuario, id_materia, periodo)` si no existe.
-4. **Crea el administrador inicial** si no existe ningún `admin`.
-
-### 5. Ejecutar la aplicación
+### 5. Ejecución del Servidor de Desarrollo
 
 ```bash
 uvicorn main:app --reload
 ```
 
-Abre **http://localhost:8000** → serás redirigido a `/login`.
-
-> **Primer acceso:** `admin@control.com` / `admin123` (el aviso solo aparece cuando la base está vacía). **Cámbiala** desde Usuarios → Editar.
+Accede a `http://localhost:8000` en tu navegador para interactuar con la aplicación.
 
 ---
 
-## ☁️ Despliegue en Vercel
+## Despliegue en Vercel
 
-El proyecto ya incluye `vercel.json` (función serverless en `api/index.py`).
+El proyecto está preparado para desplegarse como una función Serverless en Vercel:
 
-1. Sube el proyecto a un repositorio de GitHub/GitLab.
-2. En Vercel: **Add New → Project** e importa el repositorio.
-   - *Framework Preset*: **Other**
-   - *Build Command*: vacío · *Output Directory*: vacío
-3. En **Settings → Environment Variables** agrega:
-   - `DATABASE_URL` (la URL de Supabase)
-   - `SESSION_SECRET` (clave aleatoria nueva)
-   - `SESSION_HTTPS_ONLY` → `true`
-   - `ADMIN_EMAIL` / `ADMIN_PASSWORD` (opcionales)
-4. Despliega ✅
-
-> El archivo `.env` está en `.gitignore` y **no** se sube al repositorio; en producción las variables se configuran desde el panel de Vercel.
+1. Conecta tu repositorio de GitHub con tu cuenta de Vercel.
+2. Crea un nuevo proyecto e importa este repositorio.
+3. En la configuración de variables de entorno de Vercel, agrega:
+   - `DATABASE_URL`
+   - `SESSION_SECRET`
+   - `SESSION_HTTPS_ONLY` (`true`)
+4. Despliega el proyecto.
 
 ---
 
-## 🧪 Pruebas
+## Licencia
 
-La aplicación se validó de forma automatizada con `TestClient` (FastAPI) y una base **SQLite en memoria** (sobreescribiendo `get_db`), cubriendo:
-
-- Hashing y verificación bcrypt (incluida la migración de contraseñas en texto plano).
-- Redirección a `/login` sin sesión.
-- Rechazo CSRF (token ausente o inválido → `403`).
-- Login/logout, bloqueo tras 5 intentos fallidos.
-- CRUD completo de usuarios, materias, inscripciones y calificaciones (crear, editar, eliminar, duplicados).
-- Control de acceso por roles (admin, docente, alumno).
-
----
-
-## 🔌 Endpoints principales
-
-| Método | Ruta | Descripción | Permiso |
-|--------|------|-------------|---------|
-| GET | `/` | Dashboard (pestañas) | Cualquier sesión |
-| GET | `/login` | Página de inicio de sesión | Público |
-| POST | `/login` | Iniciar sesión | Público (CSRF) |
-| POST | `/logout` | Cerrar sesión | Sesión |
-| POST | `/usuarios/crear` · `/editar/{id}` · `/eliminar/{id}` | CRUD usuarios | `admin` |
-| POST | `/materias/crear` · `/editar/{id}` · `/eliminar/{id}` | CRUD materias | `admin`, `docente` |
-| POST | `/inscripciones/crear` · `/editar/{id}` · `/eliminar/{id}` | CRUD inscripciones | `admin`, `docente` |
-| POST | `/calificaciones/actualizar/{id}` | Actualizar parciales y promedio | `admin`, `docente` |
-
-Todas las rutas `POST` exigen el token CSRF de la sesión.
-
----
-
-## 🛠️ Solución de problemas
-
-| Problema | Solución |
-|----------|----------|
-| `Falta la variable de entorno DATABASE_URL` | Crea el `.env` a partir de `.env.example` y completa la URL. |
-| `Error al conectar con la base de datos` al correr `create_table.py` | Verifica la URL y que la IP/región de Supabase permita la conexión. |
-| No recuerdas la contraseña del admin | Ejecuta de nuevo `create_table.py` (no crea otro admin si ya existe); borra el `admin` o cámbiala desde la BD. |
-| Cookie de sesión no persiste en producción | Activa `SESSION_HTTPS_ONLY=true` y usa un `SESSION_SECRET` fijo (si cambia, se invalidan las sesiones). |
-| `403` al enviar un formulario | La sesión expiró o el token CSRF cambió: recarga la página e intenta de nuevo. |
-
----
-
-## 🔒 Recomendaciones de seguridad adicionales
-
-- **Rota la contraseña de Supabase** si la URL con credenciales estuvo expuesta en el repositorio (como en versiones anteriores de este proyecto).
-- Usa un `SESSION_SECRET` largo y único por entorno; **no** reutilices el de desarrollo en producción.
-- Considera cifrar el tráfico con https (Vercel lo hace automáticamente) y activar `SESSION_HTTPS_ONLY=true`.
-- Para un despliegue real, evalúa agregar: recuperación de contraseña, registro de auditoría y límites de concurrencia.
-
----
-
-## 📄 Licencia
-
-Proyecto académico: *Programación Web con Bases de Datos* — UMB, © 2026.
+Proyecto académico: *Programación Web con Bases de Datos* — UMB.  
+Desarrollado por **Jesús Andrés Mondragón Tenorio** © 2026.
